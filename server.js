@@ -2,13 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const SerialPort = require('serialport').SerialPort;
 const WebSocket = require('ws');
+const database = require('./database');
+require('dotenv').config()
 
 const app = express();
 const wss = new WebSocket.Server({ port: 8080 });
 const port = new SerialPort({ path: 'COM5', baudRate: 9600 }); 
 
-app.use(cors());
-app.use(express.json());
+app.use(cors(), express.json());
 
 wss.on('connection', (ws) => {
     console.log('WebSocket client connected');
@@ -51,6 +52,11 @@ app.post('/api/door', (req, res) => {
     sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
 });
 
+app.get("/api/devices/status", async (req, res) => {
+    const status = await database.getStatus
+    res.send(status)
+})
+
 // Function to send serial commands
 function sendSerialCommand(command, res) {
     port.write(`${command}\n`, (err) => {
@@ -63,6 +69,7 @@ function sendSerialCommand(command, res) {
     });
 }
 
-app.listen(3000, '0.0.0.0', () => {
+app.listen(3000, '0.0.0.0', async () => {
     console.log('Server running on http://localhost:3000');
+    await database.init()
 });
