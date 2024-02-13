@@ -11,8 +11,11 @@ const port = new SerialPort({ path: 'COM5', baudRate: 9600 });
 
 app.use(cors(), express.json());
 
-wss.on('connection', (ws) => {
+wss.on('connection', async (ws) => {
     console.log('WebSocket client connected');
+
+    //send the latest data to the client
+    ws.send(JSON.stringify(await db.getStatus()));
 
     let buffer = '';
     port.on('data', (data) => {
@@ -52,11 +55,6 @@ app.post('/api/door', (req, res) => {
     sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
 });
 
-app.get("/api/devices/status", async (req, res) => {
-    const status = await database.getStatus
-    res.send(status)
-})
-
 // Function to send serial commands
 function sendSerialCommand(command, res) {
     port.write(`${command}\n`, (err) => {
@@ -69,7 +67,21 @@ function sendSerialCommand(command, res) {
     });
 }
 
+//send device state to all connected clients
+async function sendDeviceStateToClients(Data) {
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(Data));
+        }
+    });
+}
+
+// listens to changes in database 
+database.watchAndEmitUpdates((updatedData) => {
+    sendDeviceStateToClients(updatedData);
+});
+
 app.listen(3000, '0.0.0.0', async () => {
     console.log('Server running on http://localhost:3000');
-    await database.init()
+    database.init()
 });
