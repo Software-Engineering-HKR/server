@@ -19,24 +19,30 @@ wss.on('connection', async (ws) => {
 
     let buffer = '';
     port.on('data', (data) => {
-        buffer += data.toString();
-        let newlineIndex = buffer.indexOf('\n');
-        while (newlineIndex !== -1) {
-            const completeMessage = buffer.substring(0, newlineIndex);
-            wss.clients.forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(completeMessage);
-                }
-            });
-            buffer = buffer.substring(newlineIndex + 1);
-            newlineIndex = buffer.indexOf('\n');
-        }
+
+        //save to database
+        database.saveData(data)
+
+        /* */
+        // buffer += data.toString(); 
+        // let newlineIndex = buffer.indexOf('\n');
+        // while (newlineIndex !== -1) {
+        //     const completeMessage = buffer.substring(0, newlineIndex);
+        //     wss.clients.forEach((client) => {
+        //         if (client.readyState === WebSocket.OPEN) {
+        //             client.send(completeMessage);
+        //         }
+        //     });
+        //     buffer = buffer.substring(newlineIndex + 1);
+        //     newlineIndex = buffer.indexOf('\n');
+        // }
     });
     // Handle disconnection, errors, etc.
 });
 
 // Route for turning on/off LED
 app.post('/api/led', (req, res) => {
+    /*TODO save the data to database if the command is succesfull */
     sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
 });
 
@@ -68,7 +74,7 @@ function sendSerialCommand(command, res) {
 }
 
 //send device state to all connected clients
-async function sendDeviceStateToClients(Data) {
+async function sendDeviceState(Data) {
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(Data));
@@ -78,7 +84,7 @@ async function sendDeviceStateToClients(Data) {
 
 // listens to changes in database 
 database.watchAndEmitUpdates((updatedData) => {
-    sendDeviceStateToClients(updatedData);
+    sendDeviceState(updatedData);
 });
 
 app.listen(3000, '0.0.0.0', async () => {

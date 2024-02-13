@@ -19,6 +19,28 @@ async function getStatus() {
     }
 }
 
+async function saveData(data) {
+    try {
+        // Extract relevant fields from the Arduino data
+        const { led, fan, window, door, motion, light, gas } = data;
+
+        // Update device data in the Device model
+        await Device.findOneAndUpdate({ name: 'LED' }, { status: led });
+        await Device.findOneAndUpdate({ name: 'Fan' }, { status: fan });
+        await Device.findOneAndUpdate({ name: 'Window' }, { status: window });
+        await Device.findOneAndUpdate({ name: 'Door' }, { status: door });
+        await Device.findOneAndUpdate({ name: 'Motion' }, { status: motion });
+
+        // Update sensor data in the Sensor model
+        await Sensor.findOneAndUpdate({ name: 'Light' }, { value: light });
+        await Sensor.findOneAndUpdate({ name: 'Gas' }, { value: gas });
+
+        console.log('Arduino data updated in the database.');
+    } catch (error) {
+        console.error('Error updating Arduino data:', error);
+    }
+}
+
 async function updateStatus(id) {
     const device = await deviceModel.findById(id);
     console.log(device);
@@ -45,5 +67,6 @@ module.exports = {
     init,
     updateStatus,
     getStatus,
-    watchAndEmitUpdates
+    watchAndEmitUpdates,
+    saveData
 };
