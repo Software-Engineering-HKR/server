@@ -25,15 +25,15 @@ async function saveData(data) {
         const { led, fan, window, door, motion, light, gas } = data;
 
         // Update device data in the Device model
-        await Device.findOneAndUpdate({ name: 'LED' }, { status: led });
-        await Device.findOneAndUpdate({ name: 'Fan' }, { status: fan });
-        await Device.findOneAndUpdate({ name: 'Window' }, { status: window });
-        await Device.findOneAndUpdate({ name: 'Door' }, { status: door });
-        await Device.findOneAndUpdate({ name: 'Motion' }, { status: motion });
+        await deviceModel.findOneAndUpdate({ name: 'LED' }, { status: led });
+        await deviceModel.findOneAndUpdate({ name: 'Fan' }, { status: fan });
+        await deviceModel.findOneAndUpdate({ name: 'Window' }, { status: window });
+        await deviceModel.findOneAndUpdate({ name: 'Door' }, { status: door });
+        await deviceModel.findOneAndUpdate({ name: 'Motion' }, { status: motion });
 
         // Update sensor data in the Sensor model
-        await Sensor.findOneAndUpdate({ name: 'Light' }, { value: light });
-        await Sensor.findOneAndUpdate({ name: 'Gas' }, { value: gas });
+        await sensorModel.findOneAndUpdate({ name: 'Light' }, { value: light });
+        await sensorModel.findOneAndUpdate({ name: 'Gas' }, { value: gas });
 
         console.log('Arduino data updated in the database.');
     } catch (error) {
@@ -41,15 +41,6 @@ async function saveData(data) {
     }
 }
 
-async function updateStatus(id) {
-    const device = await deviceModel.findById(id);
-    console.log(device);
-    device.status = !device.status;
-
-    await device.save();
-
-    return device;
-}
 
 // Function to watch for changes and emit updates
 function watchAndEmitUpdates(sendUpdateCallback) {
@@ -65,7 +56,6 @@ function watchAndEmitUpdates(sendUpdateCallback) {
 
 module.exports = {
     init,
-    updateStatus,
     getStatus,
     watchAndEmitUpdates,
     saveData
