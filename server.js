@@ -14,51 +14,40 @@ app.use(cors(), express.json());
 wss.on('connection', async (ws) => {
     console.log('WebSocket client connected');
 
-    //send the latest data to the client
-    ws.send(JSON.stringify(await db.getStatus()));
+    try {
+        // send the latest data to the client
+        ws.send(JSON.stringify(await database.getStatus()));
 
-    let buffer = '';
-    port.on('data', (data) => {
+        let buffer = '';
+        port.on('data', (data) => {
+            //get data from the arduino 
+            buffer += data.toString();
+            let newlineIndex = buffer.indexOf('\n');
+            while (newlineIndex !== -1) {
+                const completeMessage = buffer.substring(0, newlineIndex);
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        // save the data 
+                        database.saveData(completeMessage);
+                    }
+                });
+                buffer = buffer.substring(newlineIndex + 1);
+                newlineIndex = buffer.indexOf('\n');
+            }
+        });
+    } catch (error) {
+        console.error('WebSocket connection error:', error);
+    }
 
-        //save to database
-        database.saveData(data)
-
-        /* */
-        // buffer += data.toString(); 
-        // let newlineIndex = buffer.indexOf('\n');
-        // while (newlineIndex !== -1) {
-        //     const completeMessage = buffer.substring(0, newlineIndex);
-        //     wss.clients.forEach((client) => {
-        //         if (client.readyState === WebSocket.OPEN) {
-        //             client.send(completeMessage);
-        //         }
-        //     });
-        //     buffer = buffer.substring(newlineIndex + 1);
-        //     newlineIndex = buffer.indexOf('\n');
-        // }
+    ws.on('close', (code, reason) => {
+        console.log(`WebSocket closed: ${code} - ${reason}`);
+        // Handle WebSocket disconnection here
     });
-    // Handle disconnection, errors, etc.
-});
 
-// Route for turning on/off LED
-app.post('/api/led', (req, res) => {
-    /*TODO save the data to database if the command is succesfull */
-    sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
-});
-
-// Route for turning on/off Fan
-app.post('/api/fan', (req, res) => {
-    sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
-});
-
-// Route for opening/closing Window
-app.post('/api/window', (req, res) => {
-    sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
-});
-
-// Route for opening/closing Door
-app.post('/api/door', (req, res) => {
-    sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
+    ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
+        // Handle WebSocket errors here
+    });
 });
 
 // Function to send serial commands
@@ -85,6 +74,29 @@ async function sendDeviceState(Data) {
 // listens to changes in database 
 database.watchAndEmitUpdates((updatedData) => {
     sendDeviceState(updatedData);
+});
+
+/* -------------------------ROUTES-------------------------*/
+// Route for turning on/off LED
+app.post('/api/led', (req, res) => {
+    /*TODO save the data to database if the command is succesfull */
+    sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
+    
+});
+
+// Route for turning on/off Fan
+app.post('/api/fan', (req, res) => {
+    sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
+});
+
+// Route for opening/closing Window
+app.post('/api/window', (req, res) => {
+    sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
+});
+
+// Route for opening/closing Door
+app.post('/api/door', (req, res) => {
+    sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
 });
 
 app.listen(3000, '0.0.0.0', async () => {
