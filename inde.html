@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Client</title>
+</head>
+<body>
+  <h1>Device Status:</h1>
+  
+  <div id="deviceStatusContainer"></div>
+  <button onclick="updateLed()">led</button>
+
+  <script>
+    const deviceStatusContainer = document.getElementById('deviceStatusContainer');
+
+    const ws = new WebSocket('ws://localhost:8080');
+    async function updateLed() {
+      const url = 'http://localhost:3000/api/led';
+      const dataToSend = { command: "1" };
+  
+      try {
+          const response = await fetch(url, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(dataToSend),
+          });
+  
+          if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+  
+          const data = await response.json();
+          console.log(data);
+      } catch (err) {
+          console.error('Fetch error:', err);
+      }
+  }
+  
+  
+    function updateFan() {
+
+    }
+    function updateWindow() {
+
+    }
+    function updateDoor() {
+
+    }
+    // WebSocket connection event
+    ws.addEventListener('open', (event) => {
+      console.log('Connected to WebSocket server');
+    });
+
+    // WebSocket message event
+    ws.addEventListener('message', (event) => {
+      const devices = JSON.parse(event.data);
+      console.log('Received message from server:', devices);
+
+      // Clear existing content in the container
+      deviceStatusContainer.innerHTML = '';
+
+      // Update UI with the received device states
+      devices.devices.forEach((device) => {
+         const deviceStatusElement = document.createElement('p');
+        deviceStatusElement.textContent = `${device.name}: Status - ${device.status}`;
+        deviceStatusContainer.appendChild(deviceStatusElement);
+      });
+
+      devices.sensors.forEach((device) => {
+         const deviceStatusElement = document.createElement('p');
+        deviceStatusElement.textContent = `${device.name}: Status - ${device.value}`;
+        deviceStatusContainer.appendChild(deviceStatusElement);
+      });
+    });
+
+    
+    // WebSocket close event
+    ws.addEventListener('close', (event) => {
+      console.log('WebSocket connection closed');
+    });
+  </script>
+</body>
+</html>

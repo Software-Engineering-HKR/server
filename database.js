@@ -42,6 +42,16 @@ async function saveData(data) {
 }
 
 
+async function saveState(name) {
+    const device = await deviceModel.findOne({ name: name });
+    if (device) {
+        const newStatus = !device.status; // reverse the status
+        await deviceModel.findOneAndUpdate({ name: name }, { status: newStatus });
+        return newStatus;
+    } else {
+        console.error(`Device with name ${name} not found.`);
+    }
+}
 // Function to watch for changes and emit updates
 function watchAndEmitUpdates(sendUpdateCallback) {
     deviceModel.watch().on('change', async (change) => {
@@ -56,6 +66,7 @@ function watchAndEmitUpdates(sendUpdateCallback) {
 
 module.exports = {
     init,
+    saveState,
     getStatus,
     watchAndEmitUpdates,
     saveData

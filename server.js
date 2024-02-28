@@ -1,13 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-const SerialPort = require('serialport').SerialPort;
 const WebSocket = require('ws');
 const database = require('./database');
-require('dotenv').config()
+const Serial = require('./serial'); // Adjust the path based on your project structure
 
 const app = express();
 const wss = new WebSocket.Server({ port: 8080 });
-const port = new SerialPort({ path: 'COM5', baudRate: 9600 }); 
+const port = new Serial('COM5', 9600);
+require('dotenv').config()
 
 app.use(cors(), express.json());
 
@@ -18,85 +18,78 @@ wss.on('connection', async (ws) => {
         // send the latest data to the client
         ws.send(JSON.stringify(await database.getStatus()));
 
-        let buffer = '';
-        port.on('data', (data) => {
-            //get data from the arduino 
-            buffer += data.toString();
-            let newlineIndex = buffer.indexOf('\n');
-            while (newlineIndex !== -1) {
-                const completeMessage = buffer.substring(0, newlineIndex);
-                wss.clients.forEach((client) => {
-                    if (client.readyState === WebSocket.OPEN) {
-                        // save the data 
-                        database.saveData(completeMessage);
-                    }
-                });
-                buffer = buffer.substring(newlineIndex + 1);
-                newlineIndex = buffer.indexOf('\n');
-            }
+        ws.on('close', (code, reason) => {
+            console.log(`WebSocket closed: ${code} - ${reason}`);
+            // Handle WebSocket disconnection here
         });
+    
+        ws.on('error', (error) => {
+            console.error('WebSocket error:', error);
+            // Handle WebSocket errors here
+        });
+
     } catch (error) {
-        console.error('WebSocket connection error:', error);
+        console.error(error);
     }
 
-    ws.on('close', (code, reason) => {
-        console.log(`WebSocket closed: ${code} - ${reason}`);
-        // Handle WebSocket disconnection here
-    });
+    
 
-    ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
-        // Handle WebSocket errors here
-    });
 });
 
-// Function to send serial commands
-function sendSerialCommand(command, res) {
-    port.write(`${command}\n`, (err) => {
-        if (err) {
-            console.error('Error on write:', err.message);
-            return res.status(500).json({ error: err.message });
-        }
-        console.log(`Serial message sent: ${command}`);
-        res.json({ message: `Command '${command}' sent` });
-    });
-}
-
 //send device state to all connected clients
-async function sendDeviceState(Data) {
+async function sendDeviceState() {
+    // get data
+    const data = await database.getStatus()
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(Data));
+            client.send(JSON.stringify(data));
         }
     });
 }
 
 // listens to changes in database 
-database.watchAndEmitUpdates((updatedData) => {
-    sendDeviceState(updatedData);
+database.watchAndEmitUpdates(() => {
+    sendDeviceState();
 });
 
 /* -------------------------ROUTES-------------------------*/
 // Route for turning on/off LED
-app.post('/api/led', (req, res) => {
+app.post('/api/led', async (req, res) => {
     /*TODO save the data to database if the command is succesfull */
-    sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
-    
+    console.log(req.body);
+
+    port.sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
+    await database.saveState('led')
+    sendDeviceState(); // update the sockets with the new data 
 });
 
 // Route for turning on/off Fan
-app.post('/api/fan', (req, res) => {
-    sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
+app.post('/api/fan', async (req, res) => {
+    port.sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
+    await database.saveState('fan')
+    sendDeviceState();
+    res.status(200)
 });
 
 // Route for opening/closing Window
-app.post('/api/window', (req, res) => {
-    sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
+app.post('/api/window', async (req, res) => {
+    port.sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
+    await awaitdatabase.saveState('window')
+    sendDeviceState();
 });
 
 // Route for opening/closing Door
-app.post('/api/door', (req, res) => {
-    sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
+app.post('/api/door', async (req, res) => {
+    port.sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
+    await database.saveState('door')
+    sendDeviceState();
+});
+
+
+// Route for opening/closing Door
+app.get('/api/test', (req, res) => {
+    console.log("hello world");
+    res.json("hello world")
 });
 
 app.listen(3000, '0.0.0.0', async () => {
