@@ -7,17 +7,33 @@ class Serial {
         this.port.on('open', () => {
             console.log('Serial port is open and connected.');
         });
-
+        let buffer = ''
         this.port.on('data', (data) => {
             //get data from the arduino 
             buffer += data.toString();
             let newlineIndex = buffer.indexOf('\n');
             while (newlineIndex !== -1) {
                 const completeMessage = buffer.substring(0, newlineIndex);
+                const jsonData = JSON.parse(completeMessage);
+
+                const booleanDevices = {};
+                const valueDevices = {};
+
+                for (const key in jsonData) {
+                  const value = jsonData[key];
+
+                  // Check if the value is boolean
+                  if (typeof value === 'boolean') {
+                    booleanDevices[key] = value;
+                  } else {
+                    valueDevices[key] = value;
+                  }
+                }
+                const parsedMessage = {devices: booleanDevices, sensors: valueDevices}
                 wss.clients.forEach((client) => {
                     if (client.readyState === WebSocket.OPEN) {
                         // save the data 
-                        database.saveData(completeMessage);
+                        database.saveData(parsedMessage);
                     }
                 });
                 buffer = buffer.substring(newlineIndex + 1);

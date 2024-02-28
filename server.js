@@ -55,41 +55,35 @@ database.watchAndEmitUpdates(() => {
 /* -------------------------ROUTES-------------------------*/
 // Route for turning on/off LED
 app.post('/api/led', async (req, res) => {
-    /*TODO save the data to database if the command is succesfull */
-    console.log(req.body);
-
     port.sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
-    await database.saveState('led')
+    await database.saveState('led', req.body.command)
     sendDeviceState(); // update the sockets with the new data 
+    res.status(200).json({message: "succesfull"})
+
 });
 
 // Route for turning on/off Fan
 app.post('/api/fan', async (req, res) => {
     port.sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
-    await database.saveState('fan')
+    await database.saveState('fan', req.body.command)
     sendDeviceState();
-    res.status(200)
+    res.status(200).json({message: "succesfull"})
 });
 
 // Route for opening/closing Window
 app.post('/api/window', async (req, res) => {
     port.sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
-    await awaitdatabase.saveState('window')
+    await awaitdatabase.saveState('window', req.body.command)
     sendDeviceState();
+    res.status(200).json({message: "succesfull"})
 });
 
 // Route for opening/closing Door
 app.post('/api/door', async (req, res) => {
     port.sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
-    await database.saveState('door')
+    await database.saveState('door', req.body.command)
     sendDeviceState();
-});
-
-
-// Route for opening/closing Door
-app.get('/api/test', (req, res) => {
-    console.log("hello world");
-    res.json("hello world")
+    res.status(200).json({message: "succesfull"})
 });
 
 app.listen(3000, '0.0.0.0', async () => {

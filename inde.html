@@ -9,15 +9,16 @@
   <h1>Device Status:</h1>
   
   <div id="deviceStatusContainer"></div>
-  <button onclick="updateLed()">led</button>
+  <button onclick="updateLed('1')">led on</button>
+  <button onclick="updateLed('0')">led off</button>
 
   <script>
     const deviceStatusContainer = document.getElementById('deviceStatusContainer');
 
     const ws = new WebSocket('ws://localhost:8080');
-    async function updateLed() {
+    async function updateLed(command) {
       const url = 'http://localhost:3000/api/led';
-      const dataToSend = { command: "1" };
+      const dataToSend = { command: command };
   
       try {
           const response = await fetch(url, {
@@ -31,9 +32,7 @@
           if (!response.ok) {
               throw new Error(`HTTP error! Status: ${response.status}`);
           }
-  
-          const data = await response.json();
-          console.log(data);
+          const data = response
       } catch (err) {
           console.error('Fetch error:', err);
       }
@@ -57,7 +56,7 @@
     // WebSocket message event
     ws.addEventListener('message', (event) => {
       const devices = JSON.parse(event.data);
-      console.log('Received message from server:', devices);
+      //console.log('Received message from server:', devices);
 
       // Clear existing content in the container
       deviceStatusContainer.innerHTML = '';
