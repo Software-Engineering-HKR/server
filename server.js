@@ -31,9 +31,6 @@ wss.on('connection', async (ws) => {
     } catch (error) {
         console.error(error);
     }
-
-    
-
 });
 
 //send device state to all connected clients

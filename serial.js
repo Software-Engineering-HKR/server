@@ -20,14 +20,14 @@ class Serial {
                 const valueDevices = {};
 
                 for (const key in jsonData) {
-                  const value = jsonData[key];
+                    const value = jsonData[key];
 
-                  // Check if the value is boolean
-                  if (typeof value === 'boolean') {
-                    booleanDevices[key] = value;
-                  } else {
-                    valueDevices[key] = value;
-                  }
+                    // Check if the value is boolean
+                    if (typeof value === 'boolean') {
+                      booleanDevices[key] = value;
+                    } else {
+                      valueDevices[key] = value;
+                    }
                 }
                 const parsedMessage = {devices: booleanDevices, sensors: valueDevices}
                 wss.clients.forEach((client) => {
