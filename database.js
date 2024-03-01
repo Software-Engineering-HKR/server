@@ -23,19 +23,16 @@ async function getStatus() {
 async function saveData(data) {
     try {
         // Extract relevant fields from the Arduino data
-        const { led, fan, window, door, motion, light, gas } = JSON.parse(data);
-        console.log("data:", JSON.parse(data));
 
-        // Update device data in the Device model
-        await deviceModel.findOneAndUpdate({ name: 'led' }, { status: led });
-        await deviceModel.findOneAndUpdate({ name: 'fan' }, { status: fan });
-        await deviceModel.findOneAndUpdate({ name: 'window' }, { status: window });
-        await deviceModel.findOneAndUpdate({ name: 'door' }, { status: door });
-        await deviceModel.findOneAndUpdate({ name: 'motion' }, { status: motion });
+        for (const key in data.devices) {
+            value = data.devices[key]
+            await deviceModel.findOneAndUpdate({ name: key }, { status: value });
+        }
 
-        // Update sensor data in the Sensor model
-        await sensorModel.findOneAndUpdate({ name: 'light' }, { value: light });
-        await sensorModel.findOneAndUpdate({ name: 'gas' }, { value: gas });
+        for (const key in data.sensors) {
+            value = data.devices[key]
+            await sensorModel.findOneAndUpdate({ name: key }, { value: value });
+        }
 
         console.log('Arduino data updated in the database.');
     } catch (error) {
@@ -44,6 +41,16 @@ async function saveData(data) {
 }
 
 
+async function saveState(name,command) {
+
+    try {
+        const newStatus = (command == 1) ? true : false; // reverse the status
+        await deviceModel.findOneAndUpdate({ name: name }, { status: newStatus  });
+        return 
+    } catch (error) {
+        console.error('Error handling Mongoose change event:', error);
+    }
+}
 // Function to watch for changes and emit updates
 function watchAndEmitUpdates(sendUpdateCallback) {
     deviceModel.watch().on('change', async (change) => {
@@ -62,6 +69,7 @@ async function updateSensor(sensor, command) {
 
 export {
     init,
+    saveState,
     getStatus,
     watchAndEmitUpdates,
     saveData,

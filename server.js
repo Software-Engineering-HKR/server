@@ -80,10 +80,12 @@ app.post('/api/door', (req, res) => {
 // }
 
 //send device state to all connected clients
-async function sendDeviceState(Data) {
+async function sendDeviceState() {
+    // get data
+    const data = await database.getStatus()
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(Data));
+            client.send(JSON.stringify(data));
         }
     });
 }
