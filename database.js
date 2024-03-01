@@ -1,6 +1,7 @@
-const mongoose = require("mongoose");
-const deviceModel = require('./Models/device');
-const sensorModel = require('./Models/sensor');
+import mongoose from 'mongoose';
+import deviceModel from './Models/device.js';
+import sensorModel from './Models/sensor.js';
+
 
 async function init() {
     await mongoose.connect(process.env.uri);
@@ -22,7 +23,8 @@ async function getStatus() {
 async function saveData(data) {
     try {
         // Extract relevant fields from the Arduino data
-        const { led, fan, window, door, motion, light, gas } = data;
+        const { led, fan, window, door, motion, light, gas } = JSON.parse(data);
+        console.log("data:", JSON.parse(data));
 
         // Update device data in the Device model
         await deviceModel.findOneAndUpdate({ name: 'led' }, { status: led });
@@ -54,9 +56,15 @@ function watchAndEmitUpdates(sendUpdateCallback) {
     });
 }
 
-module.exports = {
+async function updateSensor(sensor, command) {
+    await deviceModel.findOneAndUpdate({ name: sensor }, { status: command });
+}
+
+export {
     init,
     getStatus,
     watchAndEmitUpdates,
-    saveData
-};
+    saveData,
+    updateSensor
+}
+

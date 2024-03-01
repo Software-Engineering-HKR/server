@@ -1,11 +1,8 @@
-const mongoose = require("mongoose")
-
+import mongoose from 'mongoose';
 
 const deviceSchema = new mongoose.Schema({ // create schema 
     name: String,
     status: Boolean
 })
 
-
-
-module.exports = mongoose.model('Device', deviceSchema)
+export default mongoose.model('Device', deviceSchema);
