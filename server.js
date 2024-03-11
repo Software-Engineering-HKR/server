@@ -18,24 +18,28 @@ wss.on('connection', async (ws) => {
     //send the latest data to the client
     ws.send(JSON.stringify(await getStatus()));
 
-    // let buffer = '';
+    let buffer = '';
     // port.on('data', (data) => {
-
     //     buffer += data.toString();
     //     let newlineIndex = buffer.indexOf('\n');
     //     while (newlineIndex !== -1) {
-    //         const completeMessage = buffer.substring(0, newlineIndex);
-    //         // wss.clients.forEach((client) => {
-    //         //     if (client.readyState === WebSocket.OPEN) {
-    //         //         client.send(completeMessage);
-    //         //     }
-    //         // });
-    //         saveData(completeMessage)
+    //         let completeMessage = buffer.substring(0, newlineIndex);
+    //         try {
+    //             completeMessage = JSON.parse(completeMessage);
+    //             // Uncomment and adjust the broadcasting logic as needed
+    //             // wss.clients.forEach((client) => {
+    //             //     if (client.readyState === WebSocket.OPEN) {
+    //             //         client.send(JSON.stringify(completeMessage)); // Ensure data is in the correct format
+    //             //     }
+    //             // });
+    //             saveData(completeMessage).catch(error => console.error("Error saving data:", error));
+    //         } catch (error) {
+    //             console.error("Error parsing JSON:", error);
+    //         }
     //         buffer = buffer.substring(newlineIndex + 1);
     //         newlineIndex = buffer.indexOf('\n');
-    //     }
-    // });
-    // Handle disconnection, errors, etc.
+    //     }})
+            
 });
 
 // Route for turning on/off LED

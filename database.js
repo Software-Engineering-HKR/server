@@ -22,16 +22,26 @@ async function getStatus() {
 
 async function saveData(data) {
     try {
-        // Extract relevant fields from the Arduino data
-
+        console.log(data.devices);
         for (const key in data.devices) {
-            value = data.devices[key]
-            await deviceModel.findOneAndUpdate({ name: key }, { status: value });
+            let value = data.devices[key];
+            // Directly await each update with upsert
+            await deviceModel.findOneAndUpdate(
+                { name: key },
+                { $set: { status: value } },
+                { upsert: true }
+            );
         }
 
+        console.log(data.sensors);
         for (const key in data.sensors) {
-            value = data.devices[key]
-            await sensorModel.findOneAndUpdate({ name: key }, { value: value });
+            let value = data.sensors[key];
+            // Directly await each update with upsert
+            await sensorModel.findOneAndUpdate(
+                { name: key },
+                { $set: { value: value } },
+                { upsert: true }
+            );
         }
 
         console.log('Arduino data updated in the database.');
@@ -41,12 +51,12 @@ async function saveData(data) {
 }
 
 
-async function saveState(name,command) {
+async function saveState(name, command) {
 
     try {
         const newStatus = (command == 1) ? true : false; // reverse the status
-        await deviceModel.findOneAndUpdate({ name: name }, { status: newStatus  });
-        return 
+        await deviceModel.findOneAndUpdate({ name: name }, { status: newStatus });
+        return
     } catch (error) {
         console.error('Error handling Mongoose change event:', error);
     }
