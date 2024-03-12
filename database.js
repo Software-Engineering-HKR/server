@@ -63,14 +63,6 @@ async function saveState(name, command) {
 }
 // Function to watch for changes and emit updates
 function watchAndEmitUpdates(sendUpdateCallback) {
-    // deviceModel.watch().on('change', async (change) => {
-    //     try {
-    //         const updatedData = await deviceModel.findOne();
-    //         sendUpdateCallback(updatedData);
-    //     } catch (error) {
-    //         console.error('Error handling Mongoose change event:', error);
-    //     }
-    // });
     const deviceChangeStream = deviceModel.watch();
     const sensorChangeStream = sensorModel.watch();
 
