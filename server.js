@@ -84,9 +84,8 @@ app.post('/api/door', (req, res) => {
 // }
 
 //send device state to all connected clients
-async function sendDeviceState() {
-    // get data
-    const data = await getStatus()
+async function sendDeviceState(updatedData) {
+    const data = updatedData
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(data));
@@ -97,6 +96,7 @@ async function sendDeviceState() {
 
 // listens to changes in database 
 watchAndEmitUpdates((updatedData) => {
+    console.log(updatedData)
     sendDeviceState(updatedData);
 });
 
