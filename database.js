@@ -22,7 +22,6 @@ async function getStatus() {
 
 async function saveData(data) {
     try {
-        console.log(data.devices);
         for (const key in data.devices) {
             let value = data.devices[key];
             // Directly await each update with upsert
@@ -33,7 +32,6 @@ async function saveData(data) {
             );
         }
 
-        console.log(data.sensors);
         for (const key in data.sensors) {
             let value = data.sensors[key];
             // Directly await each update with upsert
@@ -61,6 +59,7 @@ async function saveState(name, command) {
         console.error('Error handling Mongoose change event:', error);
     }
 }
+
 // Function to watch for changes and emit updates
 function watchAndEmitUpdates(sendUpdateCallback) {
     const deviceChangeStream = deviceModel.watch();

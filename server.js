@@ -19,69 +19,41 @@ wss.on('connection', async (ws) => {
     ws.send(JSON.stringify(await getStatus()));
 
     let buffer = '';
-    // port.on('data', (data) => {
-    //     buffer += data.toString();
-    //     let newlineIndex = buffer.indexOf('\n');
-    //     while (newlineIndex !== -1) {
-    //         let completeMessage = buffer.substring(0, newlineIndex);
-    //         try {
-    //             completeMessage = JSON.parse(completeMessage);
-    //             // Uncomment and adjust the broadcasting logic as needed
-    //             // wss.clients.forEach((client) => {
-    //             //     if (client.readyState === WebSocket.OPEN) {
-    //             //         client.send(JSON.stringify(completeMessage)); // Ensure data is in the correct format
-    //             //     }
-    //             // });
-    //             saveData(completeMessage).catch(error => console.error("Error saving data:", error));
-    //         } catch (error) {
-    //             console.error("Error parsing JSON:", error);
-    //         }
-    //         buffer = buffer.substring(newlineIndex + 1);
-    //         newlineIndex = buffer.indexOf('\n');
-    //     }})
-            
 });
 
 // Route for turning on/off LED
 app.post('/api/led', async (req, res) => {
     // sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
-    updateSensor('led', req.body.command === '1');
+    await updateSensor('led', req.body.command === '1');
+    res.status(200).json({message: "successfull"})
 });
 
 app.post('/api/yellow-led', async (req, res) => {
     // sendSerialCommand(req.body.command === '1' ? 'YELLOWLED_ON' : 'YELLOWLED_OFF', res);
-    updateSensor('yellow-led', req.body.command === '1');
+    await updateSensor('yellow-led', req.body.command === '1');
+    res.status(200).json({message: "successfull"})
 });
 
 // Route for turning on/off Fan
-app.post('/api/fan', (req, res) => {
+app.post('/api/fan', async (req, res) => {
     // sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
-    updateSensor('fan', req.body.command === '1');
+    await updateSensor('fan', req.body.command === '1');
+    res.status(200).json({message: "successfull"})
 });
 
 // Route for opening/closing Window
-app.post('/api/window', (req, res) => {
+app.post('/api/window', async (req, res) => {
     // sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
-    updateSensor('window', req.body.command === '1');
+    await updateSensor('window', req.body.command === '1');
+    res.status(200).json({message: "successfull"})
 });
 
 // Route for opening/closing Door
-app.post('/api/door', (req, res) => {
+app.post('/api/door', async (req, res) => {
     // sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
-    updateSensor('door', req.body.command === '1');
+    await updateSensor('door', req.body.command === '1');
+    res.status(200).json({message: "successfull"})
 });
-
-// Function to send serial commands
-// function sendSerialCommand(command, res) {
-//     port.write(`${command}\n`, (err) => {
-//         if (err) {
-//             console.error('Error on write:', err.message);
-//             return res.status(500).json({ error: err.message });
-//         }
-//         console.log(`Serial message sent: ${command}`);
-//         res.json({ message: `Command '${command}' sent` });
-//     });
-// }
 
 //send device state to all connected clients
 async function sendDeviceState(updatedData) {
@@ -96,11 +68,10 @@ async function sendDeviceState(updatedData) {
 
 // listens to changes in database 
 watchAndEmitUpdates((updatedData) => {
-    console.log(updatedData)
     sendDeviceState(updatedData);
 });
 
-app.listen(5000, '0.0.0.0', async () => {
+app.listen(3000, '0.0.0.0', async () => {
     console.log('Server running on http://localhost:5000');
     init()
 });
