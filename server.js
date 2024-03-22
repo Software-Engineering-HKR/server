@@ -108,6 +108,16 @@ app.post('/api/LCD', async(req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 })
+
+app.post('/api/alarmOff', async(req,res) => {
+    try {
+        port.sendSerialCommand(req.body.command === '1' ? 'BUZZER_ON' : 'BUZZER_OFF', res)
+    } catch (error) {
+        console.error('Error handling BUZZER command:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+})
+
 app.listen(serverPort, '0.0.0.0', async () => {
     console.log(`Server running on http://localhost:${serverPort}`);
     init()
