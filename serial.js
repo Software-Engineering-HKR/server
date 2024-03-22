@@ -1,6 +1,7 @@
-const SerialPort = require('serialport').SerialPort;
+import {SerialPort} from 'serialport'
+import { saveData } from './database.js';
 
-class Serial {
+export class Serial {
     constructor(portName, baudRate) {
         this.port = new SerialPort({ path: portName, baudRate: baudRate}); 
 
@@ -21,8 +22,6 @@ class Serial {
 
                 for (const key in jsonData) {
                     const value = jsonData[key];
-
-                    // Check if the value is boolean
                     if (typeof value === 'boolean') {
                       booleanDevices[key] = value;
                     } else {
@@ -30,12 +29,13 @@ class Serial {
                     }
                 }
                 const parsedMessage = {devices: booleanDevices, sensors: valueDevices}
+
                 wss.clients.forEach((client) => {
                     if (client.readyState === WebSocket.OPEN) {
-                        // save the data 
                         database.saveData(parsedMessage);
                     }
                 });
+
                 buffer = buffer.substring(newlineIndex + 1);
                 newlineIndex = buffer.indexOf('\n');
             }
@@ -52,11 +52,11 @@ class Serial {
     }
 
     checkStatus() {
-      if (this.port.isOpen) {
-        return true
-      } else {
-        return false 
-      }
+        if (this.port.isOpen) {
+            return true
+        } else {
+            return false 
+        }
     }
 
     sendSerialCommand(command, res) {
@@ -74,6 +74,3 @@ class Serial {
         }
     }
 }
-
-module.exports = Serial
-

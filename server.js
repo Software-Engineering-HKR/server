@@ -1,14 +1,15 @@
 import express from 'express';
 import cors from 'cors';
-import { SerialPort } from 'serialport';
 import { WebSocketServer, WebSocket } from 'ws';
-import { init, getStatus, watchAndEmitUpdates, saveData, updateSensor } from './database.js';
+import { init, getStatus, watchAndEmitUpdates, updateDevice, insertMessage } from './database.js';
 import dotenv from 'dotenv';
+import {Serial} from './serial.js';
 dotenv.config()
 
 const app = express();
 const wss = new WebSocketServer({ port: 8080 });
-// const port = new SerialPort({ path: 'COM5', baudRate: 9600 });
+const port = new Serial('COM5', 9600)
+const serverPort = 5000
 
 app.use(cors(), express.json());
 
@@ -18,41 +19,14 @@ wss.on('connection', async (ws) => {
     //send the latest data to the client
     ws.send(JSON.stringify(await getStatus()));
 
-    let buffer = '';
-});
+    ws.on('close', () => {
+        console.log('WebSocket client disconnected');
+        // Handle any cleanup or additional logic here
+    });
 
-// Route for turning on/off LED
-app.post('/api/led', async (req, res) => {
-    // sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
-    await updateSensor('led', req.body.command === '1');
-    res.status(200).json({message: "successfull"})
-});
-
-app.post('/api/yellow-led', async (req, res) => {
-    // sendSerialCommand(req.body.command === '1' ? 'YELLOWLED_ON' : 'YELLOWLED_OFF', res);
-    await updateSensor('yellow-led', req.body.command === '1');
-    res.status(200).json({message: "successfull"})
-});
-
-// Route for turning on/off Fan
-app.post('/api/fan', async (req, res) => {
-    // sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
-    await updateSensor('fan', req.body.command === '1');
-    res.status(200).json({message: "successfull"})
-});
-
-// Route for opening/closing Window
-app.post('/api/window', async (req, res) => {
-    // sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
-    await updateSensor('window', req.body.command === '1');
-    res.status(200).json({message: "successfull"})
-});
-
-// Route for opening/closing Door
-app.post('/api/door', async (req, res) => {
-    // sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
-    await updateSensor('door', req.body.command === '1');
-    res.status(200).json({message: "successfull"})
+    ws.on('error', (err) => {
+        console.error('Error:', err.message);
+    });
 });
 
 //send device state to all connected clients
@@ -65,13 +39,76 @@ async function sendDeviceState(updatedData) {
     });
 }
 
-
-// listens to changes in database 
 watchAndEmitUpdates((updatedData) => {
     sendDeviceState(updatedData);
 });
 
-app.listen(3000, '0.0.0.0', async () => {
-    console.log('Server running on http://localhost:5000');
+app.post('/api/led', async (req, res) => {
+    try {
+        port.sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
+        await updateDevice('led', req.body.command === '1');
+        res.status(200).json({ message: "successful" });
+    } catch (error) {
+        console.error('Error handling LED command:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.post('/api/yellow-led', async (req, res) => {
+    try {
+        port.sendSerialCommand(req.body.command === '1' ? 'YELLOWLED_ON' : 'YELLOWLED_OFF', res);
+        await updateDevice('yellow-led', req.body.command === '1');
+        res.status(200).json({message: "successfull"})
+    } catch (error) {
+        console.error('Error handling yellow-led command:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.post('/api/fan', async (req, res) => {
+    try {
+        port.sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
+        await updateDevice('fan', req.body.command === '1');
+        res.status(200).json({message: "successfull"})
+    } catch (error) {
+        console.error('Error handling fan command:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.post('/api/window', async (req, res) => {
+    try {
+        port.sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
+        await updateDevice('window', req.body.command === '1');
+        res.status(200).json({message: "successfull"})
+    } catch (error) {
+        console.error('Error handling window command:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.post('/api/door', async (req, res) => {
+    try {
+        port.sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
+        await updateDevice('door', req.body.command === '1');
+        res.status(200).json({message: "successfull"})
+    } catch (error) {
+        console.error('Error handling door command:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.post('/api/LCD', async(req, res) => {
+    try {
+        // port.sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
+        await insertMessage(req.body.message);
+        res.status(200).json({message: "successfull"})
+    } catch (error) {
+        console.error('Error handling LCD command:', error.message);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+})
+app.listen(serverPort, '0.0.0.0', async () => {
+    console.log(`Server running on http://localhost:${serverPort}`);
     init()
 });

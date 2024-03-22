@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import deviceModel from './Models/device.js';
 import sensorModel from './Models/sensor.js';
+import lcdModel from './Models/lcd.js';
 
 
 async function init() {
@@ -9,14 +10,47 @@ async function init() {
 
 async function getStatus() {
     try {
-        const [deviceData, sensorData] = await Promise.all([
+        const [deviceData, sensorData, lcdData] = await Promise.all([
             deviceModel.find(),
-            sensorModel.find()
+            sensorModel.find(),
+            lcdModel.findOne() 
         ]);
 
-        return { devices: deviceData, sensors: sensorData };
+        return { devices: deviceData, sensors: sensorData, lcd: lcdData };
     } catch (error) {
         console.error('Error querying data:', error);
+    }
+}
+
+async function insertMessage(newMessage) {
+
+    try {
+        // Find the LCD document
+        const lcd = await lcdModel.findOne();
+    
+        // If the LCD document exists
+        if (lcd) {
+            let updatedMessages;
+    
+            // If the messages array already has 10 messages, remove the oldest one
+            if (lcd.messages.length >= 10) {
+                updatedMessages = lcd.messages.slice(1); // Remove the first (oldest) message
+            } else {
+                updatedMessages = lcd.messages; // Copy the existing messages
+            }
+    
+            // Add the new message to the end of the messages array
+            updatedMessages.push(newMessage);
+
+            // Update the LCD document with the new messages array
+            await lcdModel.findOneAndUpdate({ name: lcd.name }, { messages: updatedMessages });
+    
+            console.log('LCD document updated with the new message.');
+        } else {
+            console.error('LCD document not found.');
+        }
+    } catch (error) {
+        console.error('Error updating LCD document:', error);
     }
 }
 
@@ -50,7 +84,6 @@ async function saveData(data) {
 
 
 async function saveState(name, command) {
-
     try {
         const newStatus = (command == 1) ? true : false; // reverse the status
         await deviceModel.findOneAndUpdate({ name: name }, { status: newStatus });
@@ -84,8 +117,12 @@ function watchAndEmitUpdates(sendUpdateCallback) {
     });
 }
 
-async function updateSensor(sensor, command) {
-    await deviceModel.findOneAndUpdate({ name: sensor }, { status: command });
+async function updateDevice(sensor, command) {
+    try {
+        await deviceModel.findOneAndUpdate({ name: sensor }, { status: command });
+    } catch (error) {
+        console.log(error);
+    }
 }
 
 export {
@@ -94,6 +131,7 @@ export {
     getStatus,
     watchAndEmitUpdates,
     saveData,
-    updateSensor
+    updateDevice,
+    insertMessage
 }
 
