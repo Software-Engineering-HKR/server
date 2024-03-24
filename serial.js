@@ -30,11 +30,7 @@ export class Serial {
                 }
                 const parsedMessage = {devices: booleanDevices, sensors: valueDevices}
 
-                wss.clients.forEach((client) => {
-                    if (client.readyState === WebSocket.OPEN) {
-                        database.saveData(parsedMessage);
-                    }
-                });
+                database.saveData(parsedMessage);
 
                 buffer = buffer.substring(newlineIndex + 1);
                 newlineIndex = buffer.indexOf('\n');
