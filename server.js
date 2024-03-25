@@ -46,6 +46,13 @@ port.on('data', (data) => {
     }
 });
 
+port.on('error', (err) => {
+    console.error('Error:', err.message);
+});
+
+port.on('close', () => {
+    console.log('Serial port is closed.');
+});
 
 // Function to send serial commands
 function sendSerialCommand(command, res) {
