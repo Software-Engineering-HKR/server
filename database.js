@@ -97,6 +97,7 @@ async function saveState(name, command) {
 function watchAndEmitUpdates(sendUpdateCallback) {
     const deviceChangeStream = deviceModel.watch();
     const sensorChangeStream = sensorModel.watch();
+    const lcdChangeStream = lcdModel.watch();
 
     deviceChangeStream.on('change', async () => {
         try {
@@ -108,6 +109,15 @@ function watchAndEmitUpdates(sendUpdateCallback) {
     });
 
     sensorChangeStream.on('change', async () => {
+        try {
+            const allData = await getStatus();
+            sendUpdateCallback(allData);
+        } catch (error) {
+            console.error('Error handling change event for sensor:', error);
+        }
+    });
+
+    lcdChangeStream.on('change', async () => {
         try {
             const allData = await getStatus();
             sendUpdateCallback(allData);
