@@ -47,6 +47,7 @@ app.post('/api/led', async (req, res) => {
     try {
         port.sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
         await updateDevice('led', req.body.command === '1');
+        console.log("led!")
         res.status(200).json({ message: "successful" });
     } catch (error) {
         console.error('Error handling LED command:', error.message);
@@ -58,6 +59,7 @@ app.post('/api/yellow-led', async (req, res) => {
     try {
         port.sendSerialCommand(req.body.command === '1' ? 'YELLOWLED_ON' : 'YELLOWLED_OFF', res);
         await updateDevice('yellow-led', req.body.command === '1');
+        console.log("yellow led!")
         res.status(200).json({message: "successfull"})
     } catch (error) {
         console.error('Error handling yellow-led command:', error.message);
@@ -69,6 +71,7 @@ app.post('/api/fan', async (req, res) => {
     try {
         port.sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
         await updateDevice('fan', req.body.command === '1');
+        console.log("fan")
         res.status(200).json({message: "successfull"})
     } catch (error) {
         console.error('Error handling fan command:', error.message);
@@ -80,6 +83,7 @@ app.post('/api/window', async (req, res) => {
     try {
         port.sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
         await updateDevice('window', req.body.command === '1');
+        console.log("window!")
         res.status(200).json({message: "successfull"})
     } catch (error) {
         console.error('Error handling window command:', error.message);
@@ -91,6 +95,7 @@ app.post('/api/door', async (req, res) => {
     try {
         port.sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
         await updateDevice('door', req.body.command === '1');
+        console.log("door!")
         res.status(200).json({message: "successfull"})
     } catch (error) {
         console.error('Error handling door command:', error.message);
@@ -102,6 +107,7 @@ app.post('/api/LCD', async(req, res) => {
     try {
         // port.sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
         await insertMessage(req.body.message);
+        console.log("new message: " + req.body.message)
         res.status(200).json({message: "successfull"})
     } catch (error) {
         console.error('Error handling LCD command:', error.message);

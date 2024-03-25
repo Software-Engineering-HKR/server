@@ -30,7 +30,7 @@ export class Serial {
                 }
                 const parsedMessage = {devices: booleanDevices, sensors: valueDevices}
 
-                database.saveData(parsedMessage);
+                saveData(parsedMessage);
 
                 buffer = buffer.substring(newlineIndex + 1);
                 newlineIndex = buffer.indexOf('\n');
