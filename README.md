@@ -71,3 +71,4 @@ The backend provides several endpoints for managing and controlling smart house 
 - Ensure that the backend server is running and accessible from your application.
 - Make requests to the appropriate endpoints with the required authentication and parameters.
 - Refer to the provided controller and middleware files for further implementation details and customization options.
+- If you have further questions checkout the index.html to see how to implement into the frontend
