@@ -1,4 +1,3 @@
-import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken'
@@ -8,10 +7,11 @@ import sensorModel from '../Models/sensor.js';
 import lcdModel from '../Models/lcd.js';
 import userModel from '../Models/user.js';
 
-const salt = 10
+const saltRounds = 10;
+let latestStates = {};
 
 const dbController = {
-    async init() {
+    init: async () => {
         try {
             await mongoose.connect(process.env.uri);
             console.log("Database connected successfully");
@@ -20,15 +20,23 @@ const dbController = {
         }
     },
 
-    async fetchData() {
-        const devices = await deviceModel.find();
-        const sensors = await sensorModel.find();
-        const lcd = await lcdModel.find();
-        return { devices, sensors, lcd };
+    fetchData: async () => {
+        try {
+            const [devices, sensors, lcd] = await Promise.all([
+                deviceModel.find(),
+                sensorModel.find(),
+                lcdModel.find()
+            ]);
+    
+            return { devices, sensors, lcd };
+        } catch (err) {
+            throw new Error(`Error fetching data: ${err}`);
+        }
     },
 
-    async saveData(data) {
+    saveData: async (data) => {
         try {
+            //latest Data == data Then dont save to the database 
             for (const key in data.devices) {
                 let value = data.devices[key];
                 // Directly await each update with upsert
@@ -51,105 +59,102 @@ const dbController = {
 
             console.log('Arduino data updated in the database.');
         } catch (error) {
-            console.error('Error updating Arduino data:', error);
+            throw new Error(`${error.message}`);
         }
     },
 
-    test: asyncHandler(async (req, res, next) => {
-        const data = await deviceModel.find();
-        res.send(data);
-    }),
-
-    setData: asyncHandler(async (req, res, next) => {
-        const key = req.params.device;
-        const newStatus = req.body.command == 1 ? true : false;
-        const existingDevice = await deviceModel.findOne({ name: key });
-
-        if (existingDevice) {
-            const updatedDevice = await deviceModel.findOneAndUpdate(
-                { name: key },
-                { $set: { status: newStatus } },
-                { new: true } // Return the updated document
-            );
-            next();
-        } else {
-            // res.status(404).json({ error: 'Device not found.' });
-        }
-    }),
-
-    insertMessage: asyncHandler(async (req, res, next) => {
-        // Find the LCD document
-        const lcd = await lcdModel.findOne();
-
-        // If the LCD document exists
-        if (lcd) {
-            let updatedMessages;
-
-            // If the messages array already has 10 messages, remove the oldest one
-            if (lcd.messages.length >= 10) {
-                updatedMessages = lcd.messages.slice(1); // Remove the first (oldest) message
-            } else {
-                updatedMessages = lcd.messages; // Copy the existing messages
-            }
-
-            // Add the new message to the end of the messages array
-            updatedMessages.push(req.body.message);
-
-            // Update the LCD document with the new messages array
-            await lcdModel.findOneAndUpdate({ name: lcd.name }, { messages: updatedMessages });
-
-            console.log('LCD document updated with the new message.');
-        } else {
-            console.error('LCD document not found.');
-        }
-        next();
-    }),
-
-    login: asyncHandler(async (req, res) => {
-        const data = await userModel.findOne({ username: req.body.username})
-
-        if (data == null) {
-            return res.status(401).json({ message: 'username doesnt exist' });
-        }
-        const match = await bcrypt.compare(req.body.password, data.password)
-
-        if (!match) {
-            return res.status(401).json({ message: 'Wrong username of password' });
-        }
-
-        const token = jwt.sign({username: req.body.username}, process.env.secret_key, {expiresIn: '1h'})
-
-        res.json({token}) // send the token the client
-    }),
-
-
-    register: asyncHandler(async (req, res) => {
+    setData: async (device, command) => {
         try {
-            const data = await userModel.findOne({ username: req.body.username })
-            if (data) {
-                return res.status(400).json({ message: 'user already exists' });
+            const key = device;
+            const newStatus = command == 1 ? true : false;
+            const existingDevice = await deviceModel.findOne({ name: key });
+    
+            if (existingDevice) {
+                await deviceModel.findOneAndUpdate(
+                    { name: key },
+                    { $set: { status: newStatus } },
+                    { new: true } // Return the updated document
+                );
+                return
+            } else {
+                throw new Error(`Device does not exists`);
             }
-            
-            const hashedPassword = await bcrypt.hash(req.body.password, salt)
-            
-            const newUser = {
-                "username": req.body.username,
-                "password": hashedPassword
-            }
-            
-            console.log(newUser);
-            await userModel.create(newUser)
-                .then((data) => {
-                    res.status(200).json(data)
-                }).catch((err) => {
-                    console.log(err)
-                    res.status(401).json({ message: err });
-                })
         } catch (error) {
-            console.error(error);
-            return res.status(500).json({ message: 'Internal server error' });
+            throw new Error(`${error.message}`);
         }
-    }),
+    },
+
+    insertMessage: async (message) => {
+        try {
+            const lcd = await lcdModel.findOne();
+
+            if (lcd) {
+                let updatedMessages;
+
+                if (lcd.messages.length >= 10) {
+                    updatedMessages = lcd.messages.slice(1); // Remove the first (oldest) message
+                } else {
+                    updatedMessages = lcd.messages; // Copy the existing messages
+                }
+
+                // Add the new message to the end of the messages array
+                updatedMessages.push(message);
+
+                // Update the LCD document with the new messages array
+                await lcdModel.findOneAndUpdate({ name: lcd.name }, { messages: updatedMessages });
+
+                console.log('LCD document updated with the new message.');
+            } else {
+                console.error('LCD document not found.');
+            }
+        } catch (error) {
+            throw new Error(`${error.message}`);
+        }
+    },
+
+    login: async (username, password) => {
+        try {
+            const data = await userModel.findOne({ username: username });
+    
+            if (!data) {
+                throw new Error('Username does not exist');
+            }
+    
+            const match = await bcrypt.compare(password, data.password);
+    
+            if (!match) {
+                throw new Error('Wrong username or password');
+            }
+    
+            const token = jwt.sign({ username: username }, process.env.secret_key, { expiresIn: '1h' });
+    
+            return token;
+        } catch (error) {
+            throw new Error(`${error.message}`);
+        }
+    },
+
+    register: async (username, password) => {
+        try {
+            const data = await userModel.findOne({ username: username });
+    
+            if (data) {
+                throw new Error('User already exists');
+            }
+    
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+            const newUser = {
+                username: username,
+                password: hashedPassword
+            };
+    
+            await userModel.create(newUser);
+            return newUser;
+        } catch (error) {
+            throw new Error(`${error.message}`);
+        }
+    },
 };
 
 export default dbController

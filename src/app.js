@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import router from './routes/apiRoutes.js';
+import apiRouter from './routes/apiRoutes.js';
+import authRouter from './routes/authRoutes.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -13,7 +14,8 @@ dotenv.config()
 app.use(express.json());
 
 // Routes
-app.use('/api', router);
+app.use('/api', apiRouter);
+app.use('/auth', authRouter);
 
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));

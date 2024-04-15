@@ -1,8 +1,8 @@
-import asyncHandler from 'express-async-handler';
 import { Server } from 'socket.io';
 import dbController from './dbController.js';
 
 let io = null
+
 const socketController = {
 
     init: (httpServer) => {
@@ -15,26 +15,28 @@ const socketController = {
             // Handle disconnection
             socket.on('disconnect', () => {
                 console.log('User disconnected');
-                // io.emit('chat message', "asd");
+                // io.emit('data', "asd");
             });
         });
     },
 
-    emitData: asyncHandler(async (req, res, next) => {
-        const data = await dbController.fetchData();
-        if (io) {
-            io.emit('chat message', data);
-            res.status(200).json(data)
-        } else {
-            console.error('Socket.io server is not initialized');
-            res.status(400).json({message: "Socket error"})
+    emitData: async (data) => {
+        try {
+            if (io) {
+                io.emit('data', data);
+                console.log('Data emitted to all connections');
+            } else {
+                console.warn('Socket.io server is not initialized');
+            }
+        } catch (error) {
+            console.error(error);
         }
-    }),
+    },
 
     sendData: async (socket) => {
         const data = await dbController.fetchData();
         if (socket) {
-            io.emit('chat message', data);
+            io.emit('data', data);
             console.log('Data emitted to all connections:');
         } else {
             console.error('Socket.io server is not initialized');

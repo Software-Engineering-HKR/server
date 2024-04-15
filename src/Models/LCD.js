@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const LCDSchema = new mongoose.Schema({ // create schema 
+const LCDSchema = new mongoose.Schema({
     name: String,
     messages: [String]
 })

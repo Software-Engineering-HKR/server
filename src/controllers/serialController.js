@@ -1,21 +1,22 @@
 import { SerialPort } from 'serialport';
-import asyncHandler from 'express-async-handler';
-import dbController from './dbController.js';
-import socketController from './socketController.js';
 
 let port = null;
 
 const serialController = {
-
-    init: function() {
+    init: function () {
         try {
             port = new SerialPort({ path: 'COM5', baudRate: 9600 })
-            port.on('open', function() {
+
+            port.on('open', function () {
                 console.log('Serial port is open and connected.');
             });
 
+            port.on('error', function (err) {
+                console.error('Error on serial port:', err.message);
+            });
+
             let buffer = "";
-            port.on('data', function(data) {
+            port.on('data', function (data) {
                 buffer += data.toString();
                 let newlineIndex = buffer.indexOf('\n');
                 while (newlineIndex !== -1) {
@@ -26,35 +27,29 @@ const serialController = {
                     saveData(jsonData);
                 }
             });
-
-            port.on('error', function(err) {
-                console.error('Error:', err.message);
-            });
-
-            port.on('close', function() {
-                console.log('Serial port is closed.');
-            });
-
         } catch (err) {
-            console.log(err);
+            console.error('Error initializing serial port:', err);
         }
     },
 
-    sendSerialCommand: asyncHandler(async (req, res, next) => {
-        if (port.isOpen) {
-            port.write(`${req.body.command}\n`, (err) => {
+    sendSerialCommand: async (device, command) => {
+        try {
+            if (!port || !port.isOpen) {
+                return
+            }
+
+            port.write(`${device}, ${command}\n`, (err) => {
                 if (err) {
-                    console.error('Error on write:', err.message);
-                    return res.status(500).json({ message: 'Error on write' });
+                    console.error('Error writing to serial port:', err.message);
+                    throw err;
                 }
-                console.log('Serial message sent:', req.body.command);
-                next();
+                console.log('Serial message sent:', command);
             });
-        } else {
-            next()
+        } catch (error) {
+            console.error('Error sending serial command:', error);
+            throw error;
         }
-    }),
+    },
 };
 
-
-export default serialController
+export default serialController;

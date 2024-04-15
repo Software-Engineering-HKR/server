@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const deviceSchema = new mongoose.Schema({ // create schema 
+const deviceSchema = new mongoose.Schema({
     name: String,
     status: Boolean
 })

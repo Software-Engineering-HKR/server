@@ -47,7 +47,7 @@
         var username = form.elements["username"].value;
         var password = form.elements["password"].value;
 
-        const url = `http://localhost:3000/api/login`;
+        const url = `http://localhost:3000/auth/login`;
         const user = {username, password}
 
         try {
@@ -79,7 +79,7 @@
         var username = form.elements["username"].value;
         var password = form.elements["password"].value;
 
-        const url = `http://localhost:3000/api/register`;
+        const url = `http://localhost:3000/auth/register`;
         const user = {username, password}
 
 
@@ -107,11 +107,16 @@
         const url = `http://localhost:3000/api/LCD`;
         const dataToSend = { message: document.getElementById('messageBox').value };
 
+        if (!token) {
+          return console.log("Not logged in")
+        }
+
         try {
           const response = await fetch(url, {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
+                  'Authorization': 'Bearer ' + token,
               },
               body: JSON.stringify(dataToSend),
           });
@@ -128,10 +133,6 @@
       async function updateLed(command, device) {
         const url = `http://localhost:3000/api/${device}`;
         const dataToSend = { command: command };
-
-        if (!token) {
-          return console.log("Not logged in")
-        }
 
         try {
             const response = await fetch(url, {
@@ -151,7 +152,7 @@
         }
   }
 
-      socket.on('chat message', (data) => {
+      socket.on('data', (data) => {
 
         deviceStatusContainer.innerHTML = '';
         data.devices.forEach((device) => {
