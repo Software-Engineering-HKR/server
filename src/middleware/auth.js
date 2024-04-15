@@ -17,6 +17,7 @@ const authentication = {
                     return res.status(401).json({ error: 'Unauthorized' });
                 } else {
                     console.log(decoded);
+                    //check age maybe 
                     next();
                 }
             });
@@ -24,7 +25,8 @@ const authentication = {
             console.error('Error verifying token:', error);
             res.status(500).json({ error: 'Internal server error' });
         }
-    }
+    },
+    
 };
 
 export default authentication
