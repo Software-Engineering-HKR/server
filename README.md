@@ -20,24 +20,26 @@ The backend provides several endpoints for managing and controlling smart house 
 - *Method:* POST
 - *Description:* Used for user authentication. Send a POST request with the username and password in the request body to receive a JWT token.
 - *Example:*
-    json
-    {
-        "username": "example_user",
-        "password": "example_password"
-    }
-  
+```
+json
+{
+    "username": "example_user",
+    "password": "example_password"
+}
+```  
 
 2. *Register Endpoint*
 - *Endpoint:* `/register`
 - *Method:* POST
 - *Description:* Used for user registration. Send a POST request with the desired username and password in the request body to register a new user.
 - *Example:*
-    json
-    {
-        "username": "new_user",
-        "password": "new_password"
-    }
-
+```
+json
+{
+    "username": "new_user",
+    "password": "new_password"
+}
+```
 
 3. *LCD Endpoint*
 - *Endpoint:* `/LCD`
@@ -45,11 +47,12 @@ The backend provides several endpoints for managing and controlling smart house 
 - *Description:* Update and display messages on an LCD screen. Requires authentication via JWT token.
 - *Authorization:* Include a valid JWT token in the Authorization header.
 - *Body:*
-    json
-    {
-        "message": "Hello, world!"
-    }
-
+```
+json
+{
+    "message": "Hello, world!"
+}
+```
 
 4. *Device Endpoint*
 - *Endpoint:* `/:device`
@@ -59,10 +62,12 @@ The backend provides several endpoints for managing and controlling smart house 
 - *Authorization:* Include a valid JWT token in the Authorization header.
 - *Parameters:*
 - *Body:*
-    json
-    {
-        "command": "on"
-    }
+```
+json
+{
+    "command": "on"
+}
+```
 
 ## Authentication
 - Authentication is handled using JSON Web Tokens (JWT). Users must authenticate by providing a valid JWT token in the Authorization header for protected endpoints.
