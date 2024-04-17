@@ -39,20 +39,13 @@ port.on('data', (data) => {
     let newlineIndex = buffer.indexOf('\n');
     while (newlineIndex !== -1) {
         const completeMessage = buffer.substring(0, newlineIndex);
-        const jsonData = JSON.parse(completeMessage);        
+        const jsonData = JSON.parse(completeMessage);
         buffer = buffer.substring(newlineIndex + 1);
         newlineIndex = buffer.indexOf('\n');
         saveData(jsonData);
     }
 });
 
-port.on('error', (err) => {
-    console.error('Error:', err.message);
-});
-
-port.on('close', () => {
-    console.log('Serial port is closed.');
-});
 
 // Function to send serial commands
 function sendSerialCommand(command, res) {
@@ -142,7 +135,9 @@ app.post('/api/door', async (req, res) => {
 
 app.post('/api/LCD', async (req, res) => {
     try {
-        // port.sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
+        const { command, message } = req.body;
+        const serialCommand = `LCD/${message}`;
+        sendSerialCommand(serialCommand, res);
         await insertMessage(req.body.message);
         console.log("new message: " + req.body.message)
         res.status(200).json({ message: "successfull" })
