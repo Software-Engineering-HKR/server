@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 import deviceModel from './Models/device.js';
 import sensorModel from './Models/sensor.js';
 import lcdModel from './Models/lcd.js';
+import userModel from './Models/user.js'
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken'
 
 
 async function init() {
@@ -135,6 +138,52 @@ async function updateDevice(sensor, command) {
     }
 }
 
+
+const login = async (username, password) => {
+    try {
+        const data = await userModel.findOne({ username: username });
+
+        if (!data) {
+            throw new Error('Username does not exist');
+        }
+
+        const match = await bcrypt.compare(password, data.password);
+
+        if (!match) {
+            throw new Error('Wrong username or password');
+        }
+
+        const token = jwt.sign({ username: username }, process.env.secret_key, { expiresIn: '1h' });
+
+        return token;
+    } catch (error) {
+        throw new Error(`${error.message}`);
+    }
+}
+
+const register = async (username, password) => {
+    try {
+        const data = await userModel.findOne({ username: username });
+        
+        if (data) {
+            throw new Error('User already exists');
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+
+        const newUser = {
+            username: username,
+            password: hashedPassword
+        };
+
+        await userModel.create(newUser);
+        return newUser;
+    } catch (error) {
+        throw new Error(`${error.message}`);
+    }
+}
+
 export {
     init,
     saveState,
@@ -142,6 +191,8 @@ export {
     watchAndEmitUpdates,
     saveData,
     updateDevice,
-    insertMessage
+    insertMessage,
+    login,
+    register
 }
 

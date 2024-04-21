@@ -2,12 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import { SerialPort } from 'serialport';
-import { init, getStatus, watchAndEmitUpdates, updateDevice, saveData, insertMessage } from './database.js';
+import { init, getStatus, watchAndEmitUpdates, updateDevice, saveData, insertMessage, login, register } from './database.js';
 import dotenv from 'dotenv';
 import { Serial } from './serial.js';
+import jwt from 'jsonwebtoken'
 dotenv.config()
 
-const port = new SerialPort({ path: 'COM5', baudRate: 9600 })
+// const port = new SerialPort({ path: 'COM5', baudRate: 9600 })
 const app = express();
 const wss = new WebSocketServer({ port: 8080 });
 // const port = new Serial('COM5', 9600)
@@ -32,32 +33,87 @@ wss.on('connection', async (ws) => {
     });
 });
 
-let buffer = "";
-port.on('data', (data) => {
-    //get data from the arduino 
-    buffer += data.toString();
-    let newlineIndex = buffer.indexOf('\n');
-    while (newlineIndex !== -1) {
-        const completeMessage = buffer.substring(0, newlineIndex);
-        const jsonData = JSON.parse(completeMessage);
-        buffer = buffer.substring(newlineIndex + 1);
-        newlineIndex = buffer.indexOf('\n');
-        saveData(jsonData);
+
+// Middleware for auth (token verification)
+const verifyToken = (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        jwt.verify(token, process.env.secret_key, (err, decoded) => {
+            if (err) {
+                console.log('Token not valid:', err.message);
+                return res.status(401).json({ error: 'Unauthorized' });
+            } else {
+                console.log(decoded);
+                //check age maybe 
+                next();
+            }
+        });
+    } catch (error) {
+        console.error('Error verifying token:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+
+app.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const token = await login(username, password);
+        res.json({ token }); // send the token to the client
+    } catch (error) {
+        console.error('Error in login:', error);
+        res.status(401).json({ error: error.message });
     }
 });
 
 
+app.post('/register', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        await register(username, password);
+        res.status(200).json({ message: 'User registered successfully' });
+    } catch (error) {
+        console.error('Error in register:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
+
+// let buffer = "";
+// port.on('data', (data) => {
+//     //get data from the arduino 
+//     buffer += data.toString();
+//     let newlineIndex = buffer.indexOf('\n');
+//     while (newlineIndex !== -1) {
+//         const completeMessage = buffer.substring(0, newlineIndex);
+//         const jsonData = JSON.parse(completeMessage);
+//         buffer = buffer.substring(newlineIndex + 1);
+//         newlineIndex = buffer.indexOf('\n');
+//         saveData(jsonData);
+//     }
+// });
+
+
 // Function to send serial commands
-function sendSerialCommand(command, res) {
-    port.write(`${command}\n`, (err) => {
-        if (err) {
-            console.error('Error on write:', err.message);
-            return res.status(500).json({ error: err.message });
-        }
-        console.log(`Serial message sent: ${command}`);
-        // res.json({ message: `Command '${command}' sent` });
-    });
-}
+// function sendSerialCommand(command, res) {
+//     port.write(`${command}\n`, (err) => {
+//         if (err) {
+//             console.error('Error on write:', err.message);
+//             return res.status(500).json({ error: err.message });
+//         }
+//         console.log(`Serial message sent: ${command}`);
+//         // res.json({ message: `Command '${command}' sent` });
+//     });
+// }
+
 
 //send device state to all connected clients
 async function sendDeviceState(updatedData) {
@@ -69,13 +125,15 @@ async function sendDeviceState(updatedData) {
     });
 }
 
+
 watchAndEmitUpdates((updatedData) => {
     sendDeviceState(updatedData);
 });
 
-app.post('/api/led', async (req, res) => {
+
+app.post('/api/led', verifyToken, async (req, res) => {
     try {
-        sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
+        // sendSerialCommand(req.body.command === '1' ? 'LED_ON' : 'LED_OFF', res);
         await updateDevice('led', req.body.command === '1');
         console.log("led!")
         res.status(200).json({ message: "successful" });
@@ -85,9 +143,10 @@ app.post('/api/led', async (req, res) => {
     }
 });
 
-app.post('/api/yellow-led', async (req, res) => {
+
+app.post('/api/yellow-led', verifyToken, async (req, res) => {
     try {
-        sendSerialCommand(req.body.command === '1' ? 'YELLOWLED_ON' : 'YELLOWLED_OFF', res);
+        // sendSerialCommand(req.body.command === '1' ? 'YELLOWLED_ON' : 'YELLOWLED_OFF', res);
         await updateDevice('yellow-led', req.body.command === '1');
         console.log("yellow led!")
         res.status(200).json({ message: "successfull" })
@@ -97,9 +156,10 @@ app.post('/api/yellow-led', async (req, res) => {
     }
 });
 
-app.post('/api/fan', async (req, res) => {
+
+app.post('/api/fan', verifyToken, async (req, res) => {
     try {
-        sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
+        // sendSerialCommand(req.body.command === '1' ? 'FAN_ON' : 'FAN_OFF', res);
         await updateDevice('fan', req.body.command === '1');
         console.log("fan")
         res.status(200).json({ message: "successfull" })
@@ -109,9 +169,10 @@ app.post('/api/fan', async (req, res) => {
     }
 });
 
-app.post('/api/window', async (req, res) => {
+
+app.post('/api/window', verifyToken, async (req, res) => {
     try {
-        sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
+        // sendSerialCommand(req.body.command === '1' ? 'WINDOW_OPEN' : 'WINDOW_CLOSE', res);
         await updateDevice('window', req.body.command === '1');
         console.log("window!")
         res.status(200).json({ message: "successfull" })
@@ -121,9 +182,10 @@ app.post('/api/window', async (req, res) => {
     }
 });
 
-app.post('/api/door', async (req, res) => {
+
+app.post('/api/door', verifyToken, async (req, res) => {
     try {
-        sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
+        // sendSerialCommand(req.body.command === '1' ? 'DOOR_OPEN' : 'DOOR_CLOSE', res);
         await updateDevice('door', req.body.command === '1');
         console.log("door!")
         res.status(200).json({ message: "successfull" })
@@ -133,11 +195,12 @@ app.post('/api/door', async (req, res) => {
     }
 });
 
-app.post('/api/LCD', async (req, res) => {
+
+app.post('/api/LCD', verifyToken, async (req, res) => {
     try {
         const { command, message } = req.body;
         const serialCommand = `LCD/${message}`;
-        sendSerialCommand(serialCommand, res);
+        // sendSerialCommand(serialCommand, res);
         await insertMessage(req.body.message);
         console.log("new message: " + req.body.message)
         res.status(200).json({ message: "successfull" })
@@ -147,14 +210,16 @@ app.post('/api/LCD', async (req, res) => {
     }
 })
 
-app.post('/api/alarmOff', async (req, res) => {
+
+app.post('/api/alarmOff', verifyToken, async (req, res) => {
     try {
-        port.sendSerialCommand(req.body.command === '1' ? 'BUZZER_ON' : 'BUZZER_OFF', res)
+        // port.sendSerialCommand(req.body.command === '1' ? 'BUZZER_ON' : 'BUZZER_OFF', res)
     } catch (error) {
         console.error('Error handling BUZZER command:', error.message);
         // res.status(500).json({ error: 'Internal Server Error' });
     }
 })
+
 
 app.listen(serverPort, '0.0.0.0', async () => {
     console.log(`Server running on http://localhost:${serverPort}`);
