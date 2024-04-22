@@ -5,7 +5,7 @@ import dbController from './controllers/dbController.js';
 import socketController from './controllers/socketController.js';
 import serialController from './controllers/serialController.js';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
 // // Socket.io setup

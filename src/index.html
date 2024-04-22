@@ -1,117 +1,144 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>Socket.IO chat</title>
-  </head>
-  <body>
-    <input id="messageBox" type="text">
-    <button type="button" onclick="message()">Post</button>
-  
-    <form onsubmit="login(event)" method="post">
-      <div class="container">
-        <label for="username"><b>Username</b></label>
-        <input type="text" placeholder="Enter Username" name="username" required>
-  
-        <label for="password"><b>Password</b></label>
-        <input type="password" placeholder="Enter Password" name="password" required>
-  
-        <button type="submit">Login</button>
-      </div>
-    </form>
+<html lang="en">
 
-     
-    <form onsubmit="register(event)" method="post">
-      <div class="container">
-        <label for="username"><b>Username</b></label>
-        <input type="text" placeholder="Enter Username" name="username" required>
-  
-        <label for="password"><b>Password</b></label>
-        <input type="password" placeholder="Enter Password" name="password" required>
-  
-        <button type="submit">register</button>
-      </div>
-    </form>
-  
-    <div id="deviceStatusContainer"></div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-      var token = null;
-      async function login(event) {
-        event.preventDefault(); // Prevent the default form submission behavior
-  
-        // Access the form element
-        var form = event.target;
-  
-        // Access form inputs by their 'name' attribute and print their values
-        var username = form.elements["username"].value;
-        var password = form.elements["password"].value;
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Client</title>
+</head>
 
-        const url = `http://localhost:3000/auth/login`;
-        const user = {username, password}
+<body>
+  <form onsubmit="login(event)" method="post">
+    <div class="container">
+      <label for="username"><b>Username</b></label>
+      <input type="text" placeholder="Enter Username" name="username" required>
+      
+      <label for="password"><b>Password</b></label>
+      <input type="password" placeholder="Enter Password" name="password" required>
+      
+      <button type="submit">Login</button>
+    </div>
+  </form>
+  <form onsubmit="register(event)" method="post">
+    <div class="container">
+      <label for="username"><b>Username</b></label>
+      <input type="text" placeholder="Enter Username" name="username" required>
+      
+      <label for="password"><b>Password</b></label>
+      <input type="password" placeholder="Enter Password" name="password" required>
+      
+      <button type="submit">register</button>
+    </div>
+  </form>
+  <input id="messageBox" type="text">
+  <button type="button" onclick="message()">Send Message</button>
+  <h1>Device Status:</h1>
 
-        try {
-          const response = await fetch(url, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(user),
-          });
-          if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          const data = await response.json();
-          token = data.token
-          console.log(data)
-        } catch (err) {
-            console.error('Fetch error:', err);
+  <div id="deviceStatusContainer"></div>
+
+
+  <script>
+    const deviceStatusContainer = document.getElementById('deviceStatusContainer');
+
+    const ws = new WebSocket('ws://localhost:5000');
+
+    var token = null;
+    async function login(event) {
+      event.preventDefault(); // Prevent the default form submission behavior
+
+      // Access the form element
+      var form = event.target;
+
+      // Access form inputs by their 'name' attribute and print their values
+      var username = form.elements["username"].value;
+      var password = form.elements["password"].value;
+
+      const url = `http://localhost:5000/auth/login`;
+      const user = { username, password }
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
+        const data = await response.json();
+        token = data.token
+        console.log(data)
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    }
+
+    async function register(event) {
+      event.preventDefault(); // Prevent the default form submission behavior
+
+      // Access the form element
+      var form = event.target;
+
+      // Access form inputs by their 'name' attribute and print their values
+      var username = form.elements["username"].value;
+      var password = form.elements["password"].value;
+
+      const url = `http://localhost:5000/auth/register`;
+      const user = { username, password }
+
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log(data)
+      } catch (err) {
+        console.error('Fetch error:', err);
       }
 
-      async function register(event) {
-        event.preventDefault(); // Prevent the default form submission behavior
-  
-        // Access the form element
-        var form = event.target;
-  
-        // Access form inputs by their 'name' attribute and print their values
-        var username = form.elements["username"].value;
-        var password = form.elements["password"].value;
+    }
 
-        const url = `http://localhost:3000/auth/register`;
-        const user = {username, password}
+    async function message() {
+      const url = `http://localhost:5000/api/LCD`;
+      const dataToSend = { message: document.getElementById('messageBox').value };
 
-
-        try {
-          const response = await fetch(url, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(user),
-          });
-          if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          const data = await response.json();
-          console.log(data)
-        } catch (err) {
-            console.error('Fetch error:', err);
-        }
-
+      if (!token) {
+        return console.log("Not logged in")
       }
 
-
-      async function message() {
-        const url = `http://localhost:3000/api/LCD`;
-        const dataToSend = { message: document.getElementById('messageBox').value };
-
-        if (!token) {
-          return console.log("Not logged in")
+      try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+            },
+            body: JSON.stringify(dataToSend),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
+        const data = response
+      } catch (err) {
+          console.error('Fetch error:', err);
+      }
+    }
+    
+    async function updateLed(command, device) {
+      const url = `http://localhost:5000/api/${device}`;
+      const dataToSend = { command: command };
 
-        try {
+      try {
           const response = await fetch(url, {
               method: 'POST',
               headers: {
@@ -124,64 +151,53 @@
               throw new Error(`HTTP error! Status: ${response.status}`);
           }
           const data = response
-        } catch (err) {
-            console.error('Fetch error:', err);
-        }
+      } catch (err) {
+          console.error('Fetch error:', err);
       }
-      const socket = io();
-      
-      async function updateLed(command, device) {
-        const url = `http://localhost:3000/api/${device}`;
-        const dataToSend = { command: command };
+}
 
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token,
-                },
-                body: JSON.stringify(dataToSend),
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            const data = response
-        } catch (err) {
-            console.error('Fetch error:', err);
-        }
-  }
+    // WebSocket connection event
+    ws.addEventListener('open', (event) => {
+      console.log('Connected to WebSocket server');
+    });
 
-      socket.on('data', (data) => {
+    // WebSocket message event
+    ws.addEventListener('message', (event) => {
+      const devices = JSON.parse(event.data);
+      deviceStatusContainer.innerHTML = '';
 
-        deviceStatusContainer.innerHTML = '';
-        data.devices.forEach((device) => {
-          const deviceStatusElement = document.createElement('p');
-          deviceStatusElement.textContent = `${device.name}: Status - ${device.status}`;
-          const offButton = document.createElement('button')
-          offButton.innerHTML = `turn off ${device.name}`
-          offButton.onclick = function() { updateLed('0', device.name)}
-          const onButton = document.createElement('button')
-          onButton.innerHTML = `turn on ${device.name}`
-          onButton.onclick = function() { updateLed('1', device.name)}
-          deviceStatusContainer.appendChild(deviceStatusElement);
-          deviceStatusContainer.appendChild(onButton)
-          deviceStatusContainer.appendChild(offButton)
-       });
- 
-       data.sensors.forEach((device) => {
-          const deviceStatusElement = document.createElement('p');
-          deviceStatusElement.textContent = `${device.name}: Status - ${device.value}`;
-          deviceStatusContainer.appendChild(deviceStatusElement);
-       });
- 
-       
+      devices.devices.forEach((device) => {
         const deviceStatusElement = document.createElement('p');
-        const messages = data.lcd[0].messages.map(message => `<br>${message}`).join('');
-        deviceStatusElement.innerHTML = `${data.lcd[0].name}: messages - ${messages}`;
+        deviceStatusElement.textContent = `${device.name}: Status - ${device.status}`;
+        const offButton = document.createElement('button')
+        offButton.innerHTML = `turn off ${device.name}`
+        offButton.onclick = function () { updateLed('0', device.name) }
+        const onButton = document.createElement('button')
+        onButton.innerHTML = `turn on ${device.name}`
+        onButton.onclick = function () { updateLed('1', device.name) }
+        deviceStatusContainer.appendChild(deviceStatusElement);
+        deviceStatusContainer.appendChild(onButton)
+        deviceStatusContainer.appendChild(offButton)
+      });
+
+      devices.sensors.forEach((device) => {
+        const deviceStatusElement = document.createElement('p');
+        deviceStatusElement.textContent = `${device.name}: Status - ${device.value}`;
         deviceStatusContainer.appendChild(deviceStatusElement);
       });
-      
-    </script>
-  </body>
+
+      devices.lcd.forEach((lcd) => {
+        const deviceStatusElement = document.createElement('p');
+        const messages = lcd.messages.map(message => `<br>${message}`).join('');
+        deviceStatusElement.innerHTML = `${devices.lcd.name}: messages - ${messages}`;
+        deviceStatusContainer.appendChild(deviceStatusElement);
+      });
+    });
+
+    ws.addEventListener('close', (event) => {
+      console.log('WebSocket connection closed');
+    });
+  </script>
+</body>
+
 </html>
