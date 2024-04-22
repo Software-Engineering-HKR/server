@@ -66,7 +66,10 @@ app.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         const token = await login(username, password);
-        res.json({ token }); // send the token to the client
+        res.json({ 
+            'username': username,
+            'token': token
+         }); // send the token to the client
     } catch (error) {
         console.error('Error in login:', error);
         res.status(401).json({ error: error.message });
