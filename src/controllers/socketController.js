@@ -1,32 +1,36 @@
-import { Server } from 'socket.io';
+import {WebSocket, WebSocketServer} from 'ws';
 import dbController from './dbController.js';
 
-let io = null
+let wss = null;
 
 const socketController = {
-
     init: (httpServer) => {
-        io = new Server(httpServer);
+        wss = new WebSocketServer({ server: httpServer });
 
-        io.on('connection', async (socket) => {
+        wss.on('connection', async (socket) => {
             console.log('A user connected');
-            //send data 
+
+            // Send data to the connected client
             socketController.sendData(socket);
+
             // Handle disconnection
-            socket.on('disconnect', () => {
+            socket.on('close', () => {
                 console.log('User disconnected');
-                // io.emit('data', "asd");
             });
         });
     },
 
     emitData: async (data) => {
         try {
-            if (io) {
-                io.emit('data', data);
+            if (wss) {
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify(data));
+                    }
+                });
                 console.log('Data emitted to all connections');
             } else {
-                console.warn('Socket.io server is not initialized');
+                console.warn('WebSocket server is not initialized');
             }
         } catch (error) {
             console.error(error);
@@ -35,11 +39,11 @@ const socketController = {
 
     sendData: async (socket) => {
         const data = await dbController.fetchData();
-        if (socket) {
-            io.emit('data', data);
-            console.log('Data emitted to all connections:');
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(data));
+            console.log('Data emitted to the connection');
         } else {
-            console.error('Socket.io server is not initialized');
+            console.error('WebSocket connection is not initialized or closed');
         }
     }
 };
