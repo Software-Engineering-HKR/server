@@ -144,17 +144,16 @@ const login = async (username, password) => {
         const data = await userModel.findOne({ username: username });
 
         if (!data) {
-            throw new Error('Username does not exist');
+            throw new Error('User not found');
         }
 
         const match = await bcrypt.compare(password, data.password);
 
         if (!match) {
-            throw new Error('Wrong username or password');
+            throw new Error('Invalid credentials');
         }
 
         const token = jwt.sign({ username: username }, process.env.secret_key, { expiresIn: '1h' });
-
         return token;
     } catch (error) {
         throw new Error(`${error.message}`);
